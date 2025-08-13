@@ -1,47 +1,49 @@
 // inputNode.js
 
-import { useState } from 'react';
-import { Handle, Position } from 'reactflow';
+import { Position } from 'reactflow';
+import { BaseNode } from './BaseNode';
 
 export const InputNode = ({ id, data }) => {
-  const [currName, setCurrName] = useState(data?.inputName || id.replace('customInput-', 'input_'));
-  const [inputType, setInputType] = useState(data.inputType || 'Text');
+  const fields = [
+    {
+      name: 'inputName',
+      type: 'text',
+      label: 'Name',
+      defaultValue: id.replace('customInput-', 'input_'),
+      placeholder: 'Enter input name'
+    },
+    {
+      name: 'inputType',
+      type: 'select',
+      label: 'Type',
+      defaultValue: 'Text',
+      options: [
+        { value: 'Text', label: 'Text' },
+        { value: 'File', label: 'File' },
+        { value: 'Number', label: 'Number' },
+        { value: 'Boolean', label: 'Boolean' }
+      ]
+    }
+  ];
 
-  const handleNameChange = (e) => {
-    setCurrName(e.target.value);
-  };
-
-  const handleTypeChange = (e) => {
-    setInputType(e.target.value);
-  };
+  const handles = [
+    {
+      type: 'source',
+      position: Position.Right,
+      id: `${id}-value`
+    }
+  ];
 
   return (
-    <div style={{width: 200, height: 80, border: '1px solid black'}}>
-      <div>
-        <span>Input</span>
-      </div>
-      <div>
-        <label>
-          Name:
-          <input 
-            type="text" 
-            value={currName} 
-            onChange={handleNameChange} 
-          />
-        </label>
-        <label>
-          Type:
-          <select value={inputType} onChange={handleTypeChange}>
-            <option value="Text">Text</option>
-            <option value="File">File</option>
-          </select>
-        </label>
-      </div>
-      <Handle
-        type="source"
-        position={Position.Right}
-        id={`${id}-value`}
-      />
-    </div>
+    <BaseNode
+      id={id}
+      data={data}
+      title="Input"
+      fields={fields}
+      handles={handles}
+      style={{
+        borderLeft: '4px solid var(--color-primary)',
+      }}
+    />
   );
-}
+};
