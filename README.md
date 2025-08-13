@@ -294,8 +294,8 @@ npm start
 
 ### Environment URLs
 - **Frontend**: `http://localhost:3000`
-- **Backend**: `http://localhost:8001`
-- **API Docs**: `http://localhost:8001/docs`
+- **Backend**: `http://localhost:8000`
+- **API Docs**: `http://localhost:8000/docs`
 
 ## 📡 API Documentation
 
@@ -479,15 +479,11 @@ console.log('Response:', result);
 ```
 
 ## 🎯 Key Learning Outcomes
-
-### For Beginners:
 1. **Component Architecture**: How to build reusable React components
 2. **State Management**: Managing complex application state
 3. **API Integration**: Connecting frontend and backend
 4. **Algorithm Implementation**: DAG detection and parsing
-5. **Performance Optimization**: Writing efficient React code
-
-### For Intermediate:
+5. **Vanilla React**: Writing Vanilla React code
 1. **Design Patterns**: Factory, Observer, and Strategy patterns
 2. **Graph Algorithms**: DFS-based cycle detection
 3. **Event Handling**: Complex keyboard and mouse interactions
@@ -512,10 +508,7 @@ console.log('Response:', result);
 ✅ **Part 4**: Backend Integration - Complete API connection with DAG validation
 ✅ **Bonus**: Added delete, duplicate, and rectangle selection features
 
-**Total Development Time**: ~8 hours
-**Lines of Code**: ~2,500 (Frontend + Backend)
 **Test Coverage**: Manual testing with various node configurations
-**Browser Support**: Modern browsers (Chrome, Firefox, Safari, Edge)
 
 ---
 
