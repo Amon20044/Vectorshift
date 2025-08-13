@@ -5,14 +5,12 @@ import { Handle, Position } from 'reactflow';
 import { useStore } from '../store';
 
 export const TextNode = ({ id, data, selected }) => {
-  const [text, setText] = useState(data?.text || '{{input}}');
+  const [text, setText] = useState(data?.text || 'Hello {{input1}}, welcome to {{input2}}!');
   const [variables, setVariables] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [showDataTypes, setShowDataTypes] = useState(false);
   const textareaRef = useRef(null);
   const updateNodeField = useStore(state => state.updateNodeField);
-  const deleteNode = useStore(state => state.deleteNode);
-  const duplicateNode = useStore(state => state.duplicateNode);
 
   // Data type definitions for sophisticated variable handling
   const dataTypes = {
@@ -25,26 +23,34 @@ export const TextNode = ({ id, data, selected }) => {
     any: { color: '#6b7280', icon: '?' }
   };
 
-  // Extract variables with sophisticated parsing (N8N style)
+  // Extract variables with sophisticated parsing (improved for multiple inputs)
   const extractVariables = useCallback((inputText) => {
     const patterns = [
-      // Simple variables: {{variableName}}
+      // Simple variables: {{variableName}} - these should map to individual inputs
       /\{\{\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\}\}/g,
+      // Indexed variables: {{input1}}, {{input2}}, etc.
+      /\{\{\s*(input\d*)\s*\}\}/g,
       // Nested object access: {{object.property}}
       /\{\{\s*([a-zA-Z_$][a-zA-Z0-9_$]*\.[a-zA-Z_$][a-zA-Z0-9_$.]*)\s*\}\}/g,
       // Array access: {{array[0]}} or {{array[index]}}
       /\{\{\s*([a-zA-Z_$][a-zA-Z0-9_$]*\[[^\]]+\])\s*\}\}/g,
-      // Function-like expressions: {{$json.data}} or {{$node.output}}
-      /\{\{\s*(\$[a-zA-Z_$][a-zA-Z0-9_$]*(?:\.[a-zA-Z_$][a-zA-Z0-9_$]*)*)\s*\}\}/g,
     ];
     
     const matches = new Map();
+    let inputIndex = 0;
     
-    patterns.forEach(pattern => {
+    patterns.forEach((pattern, patternIndex) => {
       let match;
-      while ((match = pattern.exec(inputText)) !== null) {
+      const regex = new RegExp(pattern.source, pattern.flags);
+      while ((match = regex.exec(inputText)) !== null) {
         const fullExpression = match[1].trim();
-        const baseName = fullExpression.split(/[.\[\$]/)[0] || fullExpression;
+        let baseName = fullExpression.split(/[.\[\$]/)[0] || fullExpression;
+        
+        // Handle generic inputs by converting them to indexed inputs
+        if (baseName === 'input' && !fullExpression.match(/\d/)) {
+          baseName = `input${inputIndex}`;
+          inputIndex++;
+        }
         
         if (!matches.has(fullExpression)) {
           // Infer data type from expression structure
@@ -60,16 +66,16 @@ export const TextNode = ({ id, data, selected }) => {
             id: `${id}-${fullExpression.replace(/[.\[\]$]/g, '_')}`,
             type: inferredType,
             isNested: fullExpression.includes('.') || fullExpression.includes('['),
-            isFunction: fullExpression.startsWith('$')
+            isFunction: fullExpression.startsWith('$'),
+            inputOrder: matches.size // Order of appearance for consistent handle positioning
           });
         }
       }
     });
     
     return Array.from(matches.values()).sort((a, b) => {
-      // Sort by base name, then by complexity
-      if (a.baseName !== b.baseName) return a.baseName.localeCompare(b.baseName);
-      return a.name.localeCompare(b.name);
+      // Sort by input order to maintain consistent handle positioning
+      return a.inputOrder - b.inputOrder;
     });
   }, [id]);
 
@@ -98,7 +104,7 @@ export const TextNode = ({ id, data, selected }) => {
     updateNodeField(id, 'text', newText);
   }, [id, updateNodeField]);
 
-  // Advanced keyboard shortcuts for N8N-like functionality
+  // Advanced keyboard shortcuts for multiple input functionality
   const handleKeyDown = useCallback((e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault();
@@ -107,19 +113,25 @@ export const TextNode = ({ id, data, selected }) => {
       e.preventDefault();
       const start = e.target.selectionStart;
       const end = e.target.selectionEnd;
-      const newText = text.substring(0, start) + '{{input}}' + text.substring(end);
+      
+      // Smart input insertion based on existing variables
+      const existingInputs = variables.filter(v => v.name.startsWith('input'));
+      const nextInputNumber = existingInputs.length + 1;
+      const insertText = `{{input${nextInputNumber}}}`;
+      
+      const newText = text.substring(0, start) + insertText + text.substring(end);
       setText(newText);
       updateNodeField(id, 'text', newText);
       
       setTimeout(() => {
-        const newPos = start + 9;
+        const newPos = start + insertText.length;
         e.target.setSelectionRange(newPos, newPos);
       }, 0);
     } else if (e.key === 'F2') {
       e.preventDefault();
       setShowDataTypes(!showDataTypes);
     }
-  }, [text, id, updateNodeField, showDataTypes]);
+  }, [text, id, updateNodeField, showDataTypes, variables]);
 
   // Variable type change handler
   const handleVariableTypeChange = useCallback((variableName, newType) => {
@@ -128,16 +140,16 @@ export const TextNode = ({ id, data, selected }) => {
     ));
   }, []);
 
-  // Get dynamic node dimensions based on content
+  // Get dynamic node dimensions based on content and variables
   const getNodeDimensions = () => {
     const baseWidth = 320;
-    const baseHeight = 180;
-    const variableHeight = variables.length * 32;
-    const textHeight = Math.max(80, (text.split('\n').length * 20));
+    const baseHeight = 160;
+    const variableHeight = variables.length * 28; // Updated for new compact spacing
+    const textHeight = Math.max(60, (text.split('\n').length * 18));
     
     return {
-      width: Math.max(baseWidth, showDataTypes ? baseWidth + 100 : baseWidth),
-      height: Math.max(baseHeight, baseHeight + variableHeight + (textHeight - 80))
+      width: Math.max(baseWidth, showDataTypes ? baseWidth + 80 : baseWidth),
+      height: Math.max(baseHeight, baseHeight + variableHeight + textHeight)
     };
   };
 
@@ -160,59 +172,32 @@ export const TextNode = ({ id, data, selected }) => {
       position: 'relative',
       transition: 'all 0.2s ease'
     }}>
-      {/* Action buttons */}
-      <div style={{ 
-        position: 'absolute', 
-        top: '8px', 
-        right: '8px', 
-        display: 'flex', 
-        gap: '4px',
-        opacity: selected ? 1 : 0,
-        transition: 'opacity 0.2s ease'
-      }}>
-        <button
-          onClick={(e) => { e.stopPropagation(); duplicateNode(id); }}
-          style={{
-            width: '24px',
-            height: '24px',
-            border: 'none',
-            borderRadius: '4px',
-            backgroundColor: '#f3f4f6',
-            cursor: 'pointer',
-            fontSize: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-          title="Duplicate node"
-        >
-          📋
-        </button>
-        <button
-          onClick={(e) => { e.stopPropagation(); deleteNode(id); }}
-          style={{
-            width: '24px',
-            height: '24px',
-            border: 'none',
-            borderRadius: '4px',
-            backgroundColor: '#fee2e2',
-            cursor: 'pointer',
-            fontSize: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-          title="Delete node"
-        >
-          🗑️
-        </button>
-      </div>
+      {/* Selection indicator */}
+      {selected && (
+        <div style={{
+          position: 'absolute',
+          top: '-2px',
+          left: '-2px',
+          right: '-2px',
+          bottom: '-2px',
+          border: '2px solid #8b5cf6',
+          borderRadius: '14px',
+          pointerEvents: 'none',
+          background: 'rgba(139, 92, 246, 0.05)'
+        }} />
+      )}
 
-      {/* Input handles for variables with data types */}
+      {/* Input handles for variables with improved positioning */}
       {variables.map((variable, index) => {
         const typeInfo = dataTypes[variable.type] || dataTypes.any;
+        const handleTop = 60 + (index * 28); // More compact spacing
         return (
-          <div key={variable.id} style={{ position: 'absolute', left: '-7px', top: `${70 + (index * 32)}px` }}>
+          <div key={variable.id} style={{ 
+            position: 'absolute', 
+            left: '-8px', 
+            top: `${handleTop}px`,
+            zIndex: 10
+          }}>
             <Handle
               type="target"
               position={Position.Left}
@@ -220,27 +205,31 @@ export const TextNode = ({ id, data, selected }) => {
               style={{
                 backgroundColor: typeInfo.color,
                 border: '2px solid white',
-                width: '14px',
-                height: '14px',
-                borderRadius: variable.isNested ? '3px' : '50%'
+                width: '16px',
+                height: '16px',
+                borderRadius: variable.isNested ? '4px' : '50%',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
               }}
-              title={`${variable.name} (${variable.type})`}
+              title={`${variable.name} (${variable.type}) - Input ${index + 1}`}
             />
-            {showDataTypes && (
-              <div style={{
-                position: 'absolute',
-                left: '20px',
-                top: '-8px',
-                fontSize: '10px',
-                backgroundColor: typeInfo.color,
-                color: 'white',
-                padding: '2px 6px',
-                borderRadius: '4px',
-                whiteSpace: 'nowrap'
-              }}>
-                {typeInfo.icon} {variable.type}
-              </div>
-            )}
+            {/* Variable label on hover or when selected */}
+            <div style={{
+              position: 'absolute',
+              left: '24px',
+              top: '-4px',
+              fontSize: '10px',
+              backgroundColor: selected ? typeInfo.color : 'rgba(107, 114, 128, 0.9)',
+              color: 'white',
+              padding: '2px 6px',
+              borderRadius: '4px',
+              whiteSpace: 'nowrap',
+              opacity: selected ? 1 : 0,
+              transition: 'opacity 0.2s ease',
+              pointerEvents: 'none',
+              fontWeight: '500'
+            }}>
+              {variable.name}
+            </div>
           </div>
         );
       })}
@@ -309,7 +298,7 @@ export const TextNode = ({ id, data, selected }) => {
         onKeyDown={handleKeyDown}
         onFocus={handleFocus}
         onBlur={handleBlur}
-        placeholder="Enter text with variables like {{variableName}}&#10;Use {{object.property}} for nested access&#10;Use {{array[0]}} for array access&#10;Use {{$node.data}} for functions&#10;Press Tab to insert {{input}}, F2 to toggle types"
+        placeholder="Enter text with multiple variables:&#10;{{input1}} {{input2}} - for separate inputs&#10;{{user.name}} - for nested properties&#10;{{items[0]}} - for array access&#10;Press Tab to insert {{input}}, F2 to toggle types"
         style={{
           width: '100%',
           minHeight: '80px',

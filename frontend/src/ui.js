@@ -65,7 +65,17 @@ export const PipelineUI = () => {
     // Unified keyboard event handling
     useEffect(() => {
         const handleKeyDown = (event) => {
-            // Delete selected nodes
+            // Skip keyboard shortcuts if user is typing in an input field
+            const isTypingInInput = event.target.tagName === 'INPUT' || 
+                                   event.target.tagName === 'TEXTAREA' || 
+                                   event.target.contentEditable === 'true' ||
+                                   event.target.getAttribute('contenteditable') === 'true';
+            
+            if (isTypingInInput) {
+                return; // Let the input handle the event normally
+            }
+            
+            // Delete selected nodes (only when not typing)
             if (event.key === 'Delete' || event.key === 'Backspace') {
                 event.preventDefault();
                 deleteSelectedNodes();
@@ -80,10 +90,19 @@ export const PipelineUI = () => {
             if (event.key === ' ') {
                 setIsSpacePressed(true);
             }
-              
         };
 
         const handleKeyUp = (event) => {
+            // Skip if user is typing in an input field
+            const isTypingInInput = event.target.tagName === 'INPUT' || 
+                                   event.target.tagName === 'TEXTAREA' || 
+                                   event.target.contentEditable === 'true' ||
+                                   event.target.getAttribute('contenteditable') === 'true';
+            
+            if (isTypingInInput) {
+                return; // Let the input handle the event normally
+            }
+            
             if (event.key === 'Alt') {
                 setIsAltPressed(false);
             }
