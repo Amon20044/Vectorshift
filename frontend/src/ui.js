@@ -202,30 +202,7 @@ export const PipelineUI = () => {
                 gap: '8px',
                 alignItems: 'center'
             }}>
-                <div style={{
-                    padding: '6px 12px',
-                    backgroundColor: 'white',
-                    borderRadius: '6px',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                    fontSize: '12px',
-                    fontWeight: '500',
-                    color: '#8b5cf6',
-                    border: '1px solid #e5e7eb'
-                }}>
-                    🎯 Rectangle Selection: {isSpacePressed ? 'OFF (Panning)' : 'ON'}
-                </div>
-                <div style={{
-                    padding: '6px 12px',
-                    backgroundColor: isAltPressed ? '#8b5cf6' : 'white',
-                    color: isAltPressed ? 'white' : '#6b7280',
-                    borderRadius: '6px',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                    fontSize: '12px',
-                    fontWeight: '500',
-                    border: '1px solid #e5e7eb'
-                }}>
-                    📋 Alt: {isAltPressed ? 'Duplication Ready' : 'Hold to Duplicate'}
-                </div>
+                
             </div>
 
             <ReactFlow
@@ -297,30 +274,7 @@ export const PipelineUI = () => {
                 />
             </ReactFlow>
             
-            {/* Instructions overlay */}
-            <div style={{
-                position: 'absolute',
-                bottom: '20px',
-                right: '20px',
-                padding: '12px 16px',
-                backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                borderRadius: '8px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                fontSize: '11px',
-                color: '#6b7280',
-                maxWidth: '300px',
-                lineHeight: '1.4',
-                border: '1px solid #e5e7eb'
-            }}>
-                <div style={{ fontWeight: '600', color: '#8b5cf6', marginBottom: '6px' }}>
-                    🎯 Selection Tools:
-                </div>
-                <div><strong>Drag:</strong> Rectangle select multiple nodes</div>
-                <div><strong>Ctrl/Cmd+Click:</strong> Multi-select individual nodes</div>
-                <div><strong>Alt+Drag:</strong> Duplicate node while dragging</div>
-                <div><strong>Space:</strong> Hold to pan (disable selection)</div>
-                <div><strong>Delete:</strong> Remove selected items</div>
-            </div>
+            
         </div>
         </>
     )
