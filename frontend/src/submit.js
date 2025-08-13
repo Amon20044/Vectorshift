@@ -44,7 +44,7 @@ export const SubmitButton = () => {
 
             // Send data to backend - try multiple URLs in case of port issues
             const urls = [
-                'https://refactored-goldfish-x5wg55ppjw5fpgqp-8000.app.github.dev/pipelines/parse'
+                'http://127.0.0.1:8000/pipelines/parse'
             ];
 
             let response = null;
