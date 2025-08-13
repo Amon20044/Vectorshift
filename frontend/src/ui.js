@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import ReactFlow, { Controls, Background, MiniMap } from 'reactflow';
+import ReactFlow, { Controls, Background, MiniMap, SelectionMode } from 'reactflow';
 import { useStore } from './store';
 import { shallow } from 'zustand/shallow';
 import { InputNode } from './nodes/inputNode';
@@ -13,7 +13,7 @@ import { ApiNode } from './nodes/apiNode';
 import { ConditionalNode } from './nodes/conditionalNode';
 
 // ui.js
-// Displays the drag-and-drop UI
+// Displays the drag-and-drop UI with Rectangle Selection Tool
 // --------------------------------------------------
 
 import 'reactflow/dist/style.css';
@@ -48,6 +48,8 @@ export const PipelineUI = () => {
     const reactFlowWrapper = useRef(null);
     const [reactFlowInstance, setReactFlowInstance] = useState(null);
     const [isAltPressed, setIsAltPressed] = useState(false);
+    const [isSpacePressed, setIsSpacePressed] = useState(false);
+    const [selectionMode, setSelectionMode] = useState(SelectionMode.Partial);
     const {
       nodes,
       edges,
@@ -68,12 +70,25 @@ export const PipelineUI = () => {
                 event.preventDefault();
                 deleteSelectedNodes();
             }
+            
+            // Alt key for duplication
+            if (event.key === 'Alt') {
+                setIsAltPressed(true);
+            }
+            
+            // Space key for panning mode (disable selection temporarily)
+            if (event.key === ' ') {
+                setIsSpacePressed(true);
+            }
               
         };
 
         const handleKeyUp = (event) => {
             if (event.key === 'Alt') {
                 setIsAltPressed(false);
+            }
+            if (event.key === ' ') {
+                setIsSpacePressed(false);
             }
         };
 
@@ -96,10 +111,18 @@ export const PipelineUI = () => {
         }
     }, [isAltPressed, cloneNode]);
 
-    // Selection change handler
+    // Selection change handler with enhanced logging
     const onSelectionChange = useCallback(({ nodes, edges }) => {
-        // Handle selection changes if needed
-        console.log('Selected nodes:', nodes.length, 'Selected edges:', edges.length);
+        console.log('🎯 Selection changed:', {
+            nodes: nodes.length,
+            edges: edges.length,
+            selectedNodes: nodes.map(n => ({ id: n.id, type: n.type }))
+        });
+        
+        // Update selection mode based on current selection
+        if (nodes.length > 1) {
+            console.log('📦 Multi-node selection active');
+        }
     }, []);
 
     const getInitNodeData = (nodeID, type) => {
@@ -150,6 +173,42 @@ export const PipelineUI = () => {
     return (
         <>
         <div ref={reactFlowWrapper} style={{width: '100vw', height: '70vh', flex: 1, backgroundColor: 'var(--color-gray-50)'}}>
+            {/* Selection Mode Indicator */}
+            <div style={{
+                position: 'absolute',
+                top: '10px',
+                left: '10px',
+                zIndex: 1000,
+                display: 'flex',
+                gap: '8px',
+                alignItems: 'center'
+            }}>
+                <div style={{
+                    padding: '6px 12px',
+                    backgroundColor: 'white',
+                    borderRadius: '6px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    color: '#8b5cf6',
+                    border: '1px solid #e5e7eb'
+                }}>
+                    🎯 Rectangle Selection: {isSpacePressed ? 'OFF (Panning)' : 'ON'}
+                </div>
+                <div style={{
+                    padding: '6px 12px',
+                    backgroundColor: isAltPressed ? '#8b5cf6' : 'white',
+                    color: isAltPressed ? 'white' : '#6b7280',
+                    borderRadius: '6px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    border: '1px solid #e5e7eb'
+                }}>
+                    📋 Alt: {isAltPressed ? 'Duplication Ready' : 'Hold to Duplicate'}
+                </div>
+            </div>
+
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
@@ -165,14 +224,24 @@ export const PipelineUI = () => {
                 proOptions={proOptions}
                 snapGrid={[gridSize, gridSize]}
                 connectionLineType='smoothstep'
-                multiSelectionKeyCode={['Meta', 'Ctrl']}
+                multiSelectionKeyCode={['Meta', 'Ctrl', 'Shift']}
                 deleteKeyCode={['Backspace', 'Delete']}
                 selectionKeyCode={null}
+                panOnDrag={isSpacePressed}
+                selectionMode={selectionMode}
+                selectNodesOnDrag={false}
                 defaultEdgeOptions={{
-                    style: { strokeWidth: 2, stroke: 'var(--color-primary)' },
+                    style: { 
+                        strokeWidth: 2, 
+                        stroke: 'var(--color-primary)',
+                        cursor: 'pointer'
+                    },
                     type: 'smoothstep',
                     animated: true,
                     markerEnd: { type: 'arrowclosed', color: 'var(--color-primary)' }
+                }}
+                style={{
+                    cursor: isSpacePressed ? 'grab' : 'default'
                 }}
             >
                 <Background 
@@ -195,10 +264,44 @@ export const PipelineUI = () => {
                         borderRadius: 'var(--border-radius)',
                         boxShadow: 'var(--shadow-md)'
                     }}
-                    nodeColor="var(--color-primary)"
+                    nodeColor={(node) => {
+                        if (node.selected) return '#8b5cf6';
+                        switch(node.type) {
+                            case 'text': return '#8b5cf6';
+                            case 'customInput': return '#10b981';
+                            case 'customOutput': return '#ef4444';
+                            case 'llm': return '#f59e0b';
+                            default: return 'var(--color-primary)';
+                        }
+                    }}
                     maskColor="var(--color-gray-100)"
                 />
             </ReactFlow>
+            
+            {/* Instructions overlay */}
+            <div style={{
+                position: 'absolute',
+                bottom: '20px',
+                right: '20px',
+                padding: '12px 16px',
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                borderRadius: '8px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                fontSize: '11px',
+                color: '#6b7280',
+                maxWidth: '300px',
+                lineHeight: '1.4',
+                border: '1px solid #e5e7eb'
+            }}>
+                <div style={{ fontWeight: '600', color: '#8b5cf6', marginBottom: '6px' }}>
+                    🎯 Selection Tools:
+                </div>
+                <div><strong>Drag:</strong> Rectangle select multiple nodes</div>
+                <div><strong>Ctrl/Cmd+Click:</strong> Multi-select individual nodes</div>
+                <div><strong>Alt+Drag:</strong> Duplicate node while dragging</div>
+                <div><strong>Space:</strong> Hold to pan (disable selection)</div>
+                <div><strong>Delete:</strong> Remove selected items</div>
+            </div>
         </div>
         </>
     )
