@@ -42,6 +42,7 @@ const selector = (state) => ({
   onConnect: state.onConnect,
   deleteSelectedNodes: state.deleteSelectedNodes,
   cloneNode: state.cloneNode,
+  cloneSelectedNodes: state.cloneSelectedNodes,
 });
 
 export const PipelineUI = () => {
@@ -60,6 +61,7 @@ export const PipelineUI = () => {
       onConnect,
       deleteSelectedNodes,
       cloneNode,
+      cloneSelectedNodes,
     } = useStore(selector, shallow);
 
     // Unified keyboard event handling
@@ -79,6 +81,15 @@ export const PipelineUI = () => {
             if (event.key === 'Delete' || event.key === 'Backspace') {
                 event.preventDefault();
                 deleteSelectedNodes();
+            }
+            
+            // Clone/Duplicate selected nodes with Ctrl+D or Cmd+D
+            if ((event.ctrlKey || event.metaKey) && event.key === 'd') {
+                event.preventDefault();
+                const selectedNodes = nodes.filter(node => node.selected);
+                if (selectedNodes.length > 0) {
+                    cloneSelectedNodes();
+                }
             }
             
             // Alt key for duplication
@@ -118,7 +129,7 @@ export const PipelineUI = () => {
             document.removeEventListener('keydown', handleKeyDown);
             document.removeEventListener('keyup', handleKeyUp);
         };
-    }, [deleteSelectedNodes]);
+    }, [deleteSelectedNodes, cloneSelectedNodes, nodes]);
 
     // Node drag with Alt for duplication
     const onNodeDragStart = useCallback((event, node) => {
@@ -318,6 +329,7 @@ export const PipelineUI = () => {
                 <div><strong>Drag:</strong> Rectangle select multiple nodes</div>
                 <div><strong>Ctrl/Cmd+Click:</strong> Multi-select individual nodes</div>
                 <div><strong>Alt+Drag:</strong> Duplicate node while dragging</div>
+                <div><strong>Ctrl/Cmd+D:</strong> Clone selected nodes</div>
                 <div><strong>Space:</strong> Hold to pan (disable selection)</div>
                 <div><strong>Delete:</strong> Remove selected items</div>
             </div>
