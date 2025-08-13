@@ -9,8 +9,7 @@ app = FastAPI()
 # Add CORS middleware to allow frontend requests
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://refactored-goldfish-x5wg55ppjw5fpgqp-3000.app.github.dev"],  # React dev server
-    allow_credentials=True,
+    allow_origins=["*"],  # React dev server
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -79,10 +78,30 @@ def read_root():
 @app.post('/pipelines/parse')
 def parse_pipeline(pipeline: PipelineData):
     try:
+        # Console log the incoming data for debugging
+        print("=" * 50)
+        print("INCOMING PIPELINE DATA:")
+        print(f"Number of nodes: {len(pipeline.nodes)}")
+        print(f"Number of edges: {len(pipeline.edges)}")
+        
+        print("\nNODES:")
+        for i, node in enumerate(pipeline.nodes):
+            print(f"  {i+1}. ID: {node.id}, Type: {node.type}, Data: {node.data}")
+        
+        print("\nEDGES:")
+        for i, edge in enumerate(pipeline.edges):
+            print(f"  {i+1}. {edge.source} -> {edge.target}")
+            print(f"      Source Handle: {edge.sourceHandle}")
+            print(f"      Target Handle: {edge.targetHandle}")
+        
+        print("=" * 50)
+        
         # Calculate metrics
         num_nodes = len(pipeline.nodes)
         num_edges = len(pipeline.edges)
         is_dag_result = is_dag(pipeline.nodes, pipeline.edges)
+        
+        print(f"RESULT: Nodes={num_nodes}, Edges={num_edges}, Is_DAG={is_dag_result}")
         
         # Return the required format
         return {
@@ -92,6 +111,7 @@ def parse_pipeline(pipeline: PipelineData):
         }
     
     except Exception as e:
+        print(f"ERROR processing pipeline: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error processing pipeline: {str(e)}")
 
 if __name__ == "__main__":

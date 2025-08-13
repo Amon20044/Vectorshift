@@ -46,7 +46,7 @@ export const BaseNode = ({
     setFieldValues(initialValues);
   }, [fields, data]);
 
-  // Dynamic sizing based on content
+  // Dynamic sizing based on content - enhanced with accurate measurement
   const calculateDimensions = useCallback(() => {
     if (!contentRef.current) return;
 
@@ -56,25 +56,43 @@ export const BaseNode = ({
     let maxWidth = 200;
     let totalHeight = 60; // Base height for title and padding
 
-    // Calculate width based on content
     inputs.forEach(input => {
       if (input.type === 'text' || input.tagName === 'TEXTAREA') {
-        const textLength = input.value.length;
-        const estimatedWidth = Math.max(150, Math.min(400, textLength * 8 + 40));
-        maxWidth = Math.max(maxWidth, estimatedWidth);
+        // Create a temporary element for accurate measurement
+        const measureElement = document.createElement('div');
+        measureElement.style.position = 'absolute';
+        measureElement.style.visibility = 'hidden';
+        measureElement.style.whiteSpace = 'pre-wrap';
+        measureElement.style.wordWrap = 'break-word';
+        measureElement.style.font = window.getComputedStyle(input).font;
+        measureElement.style.padding = '8px 12px';
+        measureElement.style.width = input.tagName === 'TEXTAREA' ? '280px' : 'auto';
+        measureElement.textContent = input.value || input.placeholder || 'Sample text';
+        
+        document.body.appendChild(measureElement);
+        
+        const contentWidth = measureElement.scrollWidth + 40; // Add padding
+        const contentHeight = measureElement.scrollHeight;
+        
+        document.body.removeChild(measureElement);
+        
+        // Update max width
+        maxWidth = Math.max(maxWidth, Math.min(400, contentWidth));
+        
+        // Add height for this field
+        if (input.tagName === 'TEXTAREA') {
+          totalHeight += Math.max(60, contentHeight + 20); // Min height + padding
+        } else {
+          totalHeight += 50; // Standard input height
+        }
+      } else {
+        // Standard height for other field types
+        totalHeight += 50;
       }
     });
 
-    // Calculate height based on fields and content
-    totalHeight += fields.length * 50; // Each field takes ~50px
-    
-    // Special handling for textareas
-    inputs.forEach(input => {
-      if (input.tagName === 'TEXTAREA') {
-        const lines = (input.value.match(/\n/g) || []).length + 1;
-        totalHeight += Math.max(0, (lines - 1) * 20); // Additional height for extra lines
-      }
-    });
+    // Add height for labels
+    totalHeight += fields.length * 20; // Label height
 
     setDimensions({ 
       width: maxWidth, 
@@ -87,7 +105,7 @@ export const BaseNode = ({
     calculateDimensions();
   }, [fieldValues, calculateDimensions]);
 
-  // Handle field changes with dynamic sizing
+  // Handle field changes with dynamic sizing and debouncing
   const handleFieldChange = (fieldName, value) => {
     const newValues = { ...fieldValues, [fieldName]: value };
     setFieldValues(newValues);
@@ -97,8 +115,11 @@ export const BaseNode = ({
       onFieldChange(fieldName, value);
     }
 
-    // Trigger resize calculation
-    setTimeout(calculateDimensions, 0);
+    // Debounced resize calculation for better performance
+    clearTimeout(window.baseNodeResizeTimeout);
+    window.baseNodeResizeTimeout = setTimeout(() => {
+      calculateDimensions();
+    }, 100);
   };
   // Clean minimal styling
   const defaultStyle = {

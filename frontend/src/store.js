@@ -33,26 +33,7 @@ export const useStore = create((set, get) => ({
             edges: get().edges.filter(edge => edge.source !== nodeId && edge.target !== nodeId)
         });
     },
-    duplicateNode: (nodeId, position) => {
-        const nodeToClone = get().nodes.find(node => node.id === nodeId);
-        if (nodeToClone) {
-            const newNodeId = get().getNodeID(nodeToClone.type);
-            const duplicatedNode = {
-                ...nodeToClone,
-                id: newNodeId,
-                position: position || {
-                    x: nodeToClone.position.x + 20,
-                    y: nodeToClone.position.y + 20
-                },
-                data: { ...nodeToClone.data }
-            };
-            set({
-                nodes: [...get().nodes, duplicatedNode]
-            });
-            return duplicatedNode;
-        }
-        return null;
-    },
+    
     onNodesChange: (changes) => {
       set({
         nodes: applyNodeChanges(changes, get().nodes),
@@ -86,12 +67,6 @@ export const useStore = create((set, get) => ({
     },
     setSelectedNodes: (nodeIds) => {
         set({ selectedNodes: nodeIds });
-    },
-    deleteNode: (nodeId) => {
-      set({
-        nodes: get().nodes.filter((node) => node.id !== nodeId),
-        edges: get().edges.filter((edge) => edge.source !== nodeId && edge.target !== nodeId),
-      });
     },
     deleteSelectedNodes: () => {
       const selectedNodes = get().nodes.filter((node) => node.selected);

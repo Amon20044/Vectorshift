@@ -44,9 +44,7 @@ export const SubmitButton = () => {
 
             // Send data to backend - try multiple URLs in case of port issues
             const urls = [
-                'https://refactored-goldfish-x5wg55ppjw5fpgqp-8001.app.github.dev/pipelines/parse',
-                'http://localhost:8001/pipelines/parse',
-                'http://localhost:8000/pipelines/parse'
+                'https://refactored-goldfish-x5wg55ppjw5fpgqp-8000.app.github.dev/pipelines/parse'
             ];
 
             let response = null;
@@ -54,6 +52,7 @@ export const SubmitButton = () => {
 
             for (const url of urls) {
                 try {
+                    console.log(pipelineData);
                     response = await fetch(url, {
                         method: 'POST',
                         headers: {
@@ -61,7 +60,7 @@ export const SubmitButton = () => {
                         },
                         body: JSON.stringify(pipelineData),
                     });
-                    
+                    console.log('Response status:', response);
                     if (response.ok) break;
                 } catch (error) {
                     lastError = error;

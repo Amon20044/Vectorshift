@@ -68,11 +68,7 @@ export const PipelineUI = () => {
                 event.preventDefault();
                 deleteSelectedNodes();
             }
-            
-            // Track Alt key for drag duplication
-            if (event.key === 'Alt') {
-                setIsAltPressed(true);
-            }
+              
         };
 
         const handleKeyUp = (event) => {
